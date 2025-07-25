@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nover de Laura</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; overflow: hidden; background: #87CEEB; /* céu azul */
+    font-family: Arial, sans-serif;
+  }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(to top, #228B22 40%, #87CEEB 40%);
+    overflow: hidden;
+  }
+  #abobora {
+    position: absolute;
+    bottom: 60px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    background: orange;
+    border-radius: 50% 50% 40% 40%;
+    border: 3px solid #cc7000;
+    box-shadow: inset -5px 0 0 #e67e22;
+  }
+  #presente {
+    position: absolute;
+    bottom: 60px;
+    right: -60px;
+    width: 50px;
+    height: 50px;
+    background: red;
+    border-radius: 10px;
+    border: 3px solid darkred;
+    box-shadow: 0 0 5px yellow;
+  }
+  #presente::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 0;
+    width: 50px;
+    height: 10px;
+    background: yellow;
+    border-radius: 3px;
+  }
+  #presente::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20px;
+    width: 10px;
+    height: 50px;
+    background: yellow;
+    border-radius: 3px;
+  }
+  #message {
+    position: absolute;
+    top: 30%;
+    width: 100%;
+    text-align: center;
+    font-size: 24px;
+    color: #fff;
+    text-shadow: 2px 2px 4px black;
+    display: none;
+    padding: 0 10px;
+  }
+</style>
+</head>
+<body>
+ 
+<div id="game">
+  
+  <div id="abobora"></div>
+  <div id="presente"></div>
+  <h3>Pule tocando na bola laranja e quebre o presente.</h3>
+  <div id="message">
+    FELIZ aniversário Laurinha, de seus tios ADRIANA e GILBERTO!
+  </div>
+</div>
+
+<script>
+  const abobora = document.getElementById('abobora');
+  const presente = document.getElementById('presente');
+  const message = document.getElementById('message');
+  const game = document.getElementById('game');
+
+  let isJumping = false;
+  let jumpHeight = 150; // px
+  let jumpDuration = 600; // ms
+  let presenteSpeed = 3; // px per frame
+  let presenteX = window.innerWidth;
+  let aboboraBottom = 60;
+
+  // Ajustar posição inicial do presente
+  function resetPresente() {
+    presenteX = window.innerWidth + Math.random() * 300; // começa fora da tela direita
+    presente.style.right = '-50px';
+  }
+  resetPresente();
+
+  // Função de pulo do abóbora
+  function jump() {
+    if (isJumping) return;
+    isJumping = true;
+
+    let start = null;
+    function up(timestamp) {
+      if (!start) start = timestamp;
+      let elapsed = timestamp - start;
+      let progress = Math.min(elapsed / (jumpDuration / 2), 1);
+      abobora.style.bottom = aboboraBottom + jumpHeight * progress + 'px';
+
+      if (progress < 1) {
+        requestAnimationFrame(up);
+      } else {
+        start = null;
+        requestAnimationFrame(down);
+      }
+    }
+    function down(timestamp) {
+      if (!start) start = timestamp;
+      let elapsed = timestamp - start;
+      let progress = Math.min(elapsed / (jumpDuration / 2), 1);
+      abobora.style.bottom = aboboraBottom + jumpHeight * (1 - progress) + 'px';
+
+      if (progress < 1) {
+        requestAnimationFrame(down);
+      } else {
+        isJumping = false;
+      }
+    }
+    requestAnimationFrame(up);
+  }
+
+  // Detecta colisão simples (bounding box)
+  function detectCollision() {
+    const abRect = abobora.getBoundingClientRect();
+    const preRect = presente.getBoundingClientRect();
+
+    return !(
+      abRect.right < preRect.left ||
+      abRect.left > preRect.right ||
+      abRect.bottom < preRect.top ||
+      abRect.top > preRect.bottom
+    );
+  }
+
+  // Loop do jogo para mover o presente e detectar colisão
+  function gameLoop() {
+    // Move o presente da direita para a esquerda
+    presenteX -= presenteSpeed;
+    presente.style.right = (window.innerWidth - presenteX) + 'px';
+
+    // Se sair da tela, reseta
+    if (presenteX < -50) {
+      resetPresente();
+    }
+
+    // Se colisão e abóbora no ar (pulando), mostra mensagem
+    if (detectCollision() && isJumping) {
+      message.style.display = 'block';
+      // para o jogo ao mostrar a mensagem
+      cancelAnimationFrame(animationId);
+      // Opcional: bloqueia entrada depois
+      window.removeEventListener('keydown', keyHandler);
+      game.removeEventListener('touchstart', touchHandler);
+    } else {
+      animationId = requestAnimationFrame(gameLoop);
+    }
+  }
+
+  // Eventos para pular
+  function keyHandler(e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      jump();
+    }
+  }
+  function touchHandler(e) {
+    jump();
+  }
+
+  window.addEventListener('keydown', keyHandler);
+  game.addEventListener('touchstart', touchHandler);
+
+  let animationId = requestAnimationFrame(gameLoop);
+
+  // Responsividade ao redimensionar
+  window.addEventListener('resize', () => {
+    resetPresente();
+  });
+</script>
+
+</body>
+</html>
